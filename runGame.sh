@@ -1,3 +1,3 @@
 #!/bin/bash
 
-./halite -d "30 30" "python3 release/MyBot.py" "python3 baselines/random_bot.py"
+./halite -d "45 50" "python3 $1" "python3 $2" "python3 $3"

@@ -23,4 +23,5 @@ while True:
                 if not movedPiece:
                     moves.append(Move(Location(x, y), NORTH if bool(int(random.random() * 2)) else WEST))
                     movedPiece = True
-sendFrame(moves)
+
+    sendFrame(moves)

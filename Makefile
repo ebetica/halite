@@ -2,4 +2,4 @@ all:
 	(cd release;	zip ../release.zip *)
 
 clean:
-	rm *.hlt *.log *.zip
+	rm -f *.hlt *.log *.zip debug/*
