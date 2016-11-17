@@ -4,7 +4,6 @@ from random import choice, shuffle
 from itertools import product
 from scipy.signal import convolve2d
 from scipy.ndimage.filters import gaussian_filter
-from scipy.misc import imsave
 import argparse
 import logging
 import sys
