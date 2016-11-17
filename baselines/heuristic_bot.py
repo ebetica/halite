@@ -84,6 +84,7 @@ while True:
                     best = self_score
                     bestd = d
             if not movedPiece: # move piece to weakest tile
+                logging.debug("{} {} {}".format(loc[1], loc[0], int(bestd)))
                 moves.append(Move(Location(loc[1], loc[0]), int(bestd)))
                 movedPiece = True
 
