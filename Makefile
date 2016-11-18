@@ -1,4 +1,5 @@
 all:
+	mkdir sweep
 	(cd release;	zip ../release.zip *)
 
 clean:
