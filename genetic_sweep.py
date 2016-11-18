@@ -120,7 +120,7 @@ def simulate(population, pool=None):
         if pool:
             pool.apply_async(accumulate, args=(width, height, players, population, scores, ngames))
         else:
-            accumulate(width, height, players, population, scores)
+            accumulate(width, height, players, population, scores, ngames)
 
     return np.asarray(scores) / np.asarray(ngames)
 
