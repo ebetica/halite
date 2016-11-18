@@ -1,6 +1,9 @@
 # Halite
 *.hlt
 *.zip
+halite
+sweep
+sweep.out
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

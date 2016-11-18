@@ -2,7 +2,6 @@ import numpy as np
 import json
 import random
 import multiprocessing.dummy as multiprocessing
-import time
 import os
 from copy import deepcopy
 from subprocess import check_output
@@ -70,7 +69,7 @@ def mutate(p, prob=MUTATION_PROB):
 
 def run_str(p):
     pp = deepcopy(p)
-    for k in pp: 
+    for k in pp:
         if 'mp' in k: pp[k] = np.exp(pp[k])
     return '"python3 ../baselines/potential_bot.py {}"'.format(
         " ".join("{} {}".format(*v) for v in p.items()))
@@ -101,8 +100,8 @@ def simulate(population, pool=None):
     i = 0
     scores = [0 for i in range(len(population))]
     while True:
-        if i > 15:
-            if pool: 
+        if i > 20:
+            if pool:
                 pool.close()
                 pool.join()
                 pool = None
@@ -133,7 +132,7 @@ if __name__ == "__main__":
         for i in range(15):
             p1, p2 = np.random.choice(population, p=scores/sum(scores), replace=False, size=2)
             children.append(mutate(cross(p1, p2)))
-        population = [x for (y,x) in sorted(zip(scores, population), key=lambda x: x[0])][:5] + children
+        population = [x for (y, x) in sorted(zip(scores, population), key=lambda x: x[0], reverse=True)][:5] + children
         with open("../sweep.out", 'a') as f:
             f.write("== ITERATION ==\n")
             f.write(str(population[:5]) + "\n")
