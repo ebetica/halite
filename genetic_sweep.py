@@ -127,7 +127,23 @@ def simulate(population, pool=None):
 if __name__ == "__main__":
     np.set_printoptions(precision=3)
     os.chdir("sweep")
-    population = [starting_params] + [mutate(deepcopy(starting_params), 0.2) for i in range(19)]
+    if os.path.exists('../sweep.out'):
+        with open("../sweep.out", 'r') as f:
+            data = list(reversed(f.readlines()))
+        v = ""
+        for i in data:
+            if "ITERATION" in i:
+                break
+            v = i
+        population = eval(v)
+        children = []
+        for i in range(15):
+            p1, p2 = np.random.choice(population, replace=False, size=2)
+            children.append(mutate(cross(p1, p2)))
+        population += children
+    else:
+        population = [starting_params] + \
+                [mutate(deepcopy(starting_params), 0.2) for i in range(19)]
     while True:
         pool = multiprocessing.Pool()
         scores = simulate(population, pool)
