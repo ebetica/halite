@@ -88,20 +88,23 @@ def play_game(width, height, players):
     return [1/(ranking[i]+1-territory[i+1]) for i in range(np)]
 
 l = multiprocessing.Lock()
-def accumulate(width, height, players, population, scores):
+def accumulate(width, height, players, population, scores, ngames):
     results = play_game(width, height, [population[i] for i in players])
     with l:
-        for e,i in enumerate(players):
+        for e, i in enumerate(players):
             scores[i] += results[e]
-        print(np.asarray(scores))
+        for p in players:
+            ngames[p] += 1
+        print(np.asarray(scores) / np.asarray(ngames))
 
 def simulate(population, pool=None):
     print("Iteration...")
     i = 0
     scores = [0 for i in range(len(population))]
+    ngames = [0 for i in range(len(population))]
     while True:
         if i > 20:
-            if pool:
+            if pool != None:
                 pool.close()
                 pool.join()
                 pool = None
@@ -115,11 +118,11 @@ def simulate(population, pool=None):
         players = np.random.choice(range(len(population)), size=nplayers, replace=False)
 
         if pool:
-            pool.apply_async(accumulate, args=(width, height, players, population, scores))
+            pool.apply_async(accumulate, args=(width, height, players, population, scores, ngames))
         else:
             accumulate(width, height, players, population, scores)
 
-    return scores
+    return np.asarray(scores) / np.asarray(ngames)
 
 if __name__ == "__main__":
     np.set_printoptions(precision=3)
@@ -130,7 +133,7 @@ if __name__ == "__main__":
         scores = simulate(population, pool)
         children = []
         for i in range(15):
-            p1, p2 = np.random.choice(population, p=scores/sum(scores), replace=False, size=2)
+            p1, p2 = np.random.choice(population, p=scores/scores.sum(), replace=False, size=2)
             children.append(mutate(cross(p1, p2)))
         population = [x for (y, x) in sorted(zip(scores, population), key=lambda x: x[0], reverse=True)][:5] + children
         with open("../sweep.out", 'a') as f:
