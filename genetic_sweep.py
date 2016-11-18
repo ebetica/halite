@@ -39,11 +39,9 @@ starting_params = {
 }
 
 def get_bounds(key):
-    bounds = [-1, 1]
-    if 'ms' in key or 'me' in key:
-        bounds = [0, 1]
-    elif 'mp' in key:
-        bounds = [-3, 3]
+    bounds = [0, 1]
+    if 'mp' in key:
+        bounds = [-2, 2]
     return bounds
 
 def get_final_territory(fn):
@@ -82,6 +80,7 @@ def play_game(width, height, players):
     rest = ''.join(output[np * 2 + 1:]).strip()
     if rest != '':
         print("ERROR: " + rest)
+        print(players[int(rest.split(' ')[0])])
     results = output[np + 1 : np * 2 + 1]
     territory = get_final_territory(output[np].split(' ')[0])
     ranking = [int(x[-1]) for x in results]
@@ -103,12 +102,12 @@ def simulate(population, pool=None):
     scores = [0 for i in range(len(population))]
     ngames = [0 for i in range(len(population))]
     while True:
-        if i > 20:
+        if i > 40:
             if pool != None:
                 pool.close()
                 pool.join()
                 pool = None
-            if min(scores) > 0:
+            if min(ngames) > 2:
                 break
         i += 1
         nplayers = random.randint(2, 6)
@@ -141,12 +140,15 @@ if __name__ == "__main__":
             p1, p2 = np.random.choice(population, replace=False, size=2)
             children.append(mutate(cross(p1, p2)))
         population += children
+        print("Previous sweep loaded!")
     else:
         population = [starting_params] + \
                 [mutate(deepcopy(starting_params), 0.2) for i in range(19)]
+        print("Starting from scratch!")
     while True:
         pool = multiprocessing.Pool()
         scores = simulate(population, pool)
+        scores = (scores > scores.max() * 0.75) * scores
         children = []
         for i in range(15):
             p1, p2 = np.random.choice(population, p=scores/scores.sum(), replace=False, size=2)
