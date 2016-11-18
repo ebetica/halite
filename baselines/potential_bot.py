@@ -12,7 +12,7 @@ import time
 
 
 # Initial setup
-logging.basicConfig(filename='potential_bot-v2.log',
+logging.basicConfig(filename='potential_bot-v1.log',
                     filemode='w',
                     level=logging.DEBUG)
 parser = argparse.ArgumentParser(description='Superbot with params!')
@@ -50,7 +50,7 @@ args = parser.parse_args()
 
 
 myID, gameMap = getInit()
-sendInit("PotentialBot-v2")
+sendInit("PotentialBot-v1")
 gameMap = getFrame()
 width, height = gameMap.width, gameMap.height
 prodmap = np.zeros((width, height))
