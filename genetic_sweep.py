@@ -1,8 +1,11 @@
 import numpy as np
 import json
 import random
+# Since most of the work is done in a subprocess, just use threading to
+# simplify sharing, which by the way is caring
 import multiprocessing.dummy as multiprocessing
 import os
+from multiprocessing import cpu_count
 from copy import deepcopy
 from subprocess import check_output
 
@@ -78,13 +81,25 @@ def play_game(width, height, players):
         width, height, " ".join(run_str(p) for p in players))
     output = check_output(cmd, shell=True).decode().split('\n')
     rest = ''.join(output[np * 2 + 1:]).strip()
+    errored = None
     if rest != '':
         print("ERROR: " + rest)
-        print(players[int(rest.split(' ')[0])])
+        errored = [int(x) for x in rest.split(' ') if 'log' not in x]
     results = output[np + 1 : np * 2 + 1]
     territory = get_final_territory(output[np].split(' ')[0])
     ranking = [int(x[-1]) for x in results]
-    return [1/(ranking[i]+1-territory[i+1]) for i in range(np)]
+    scores = [1/(ranking[i]+1-territory[i+1]) for i in range(np)]
+    if errored is not None:
+        for i in errored:
+            scores[i-1] = 0
+    return scores
+
+
+def worker(q):
+    while True:
+        args = q.get()
+        accumulate(*args)
+        q.task_done()
 
 l = multiprocessing.Lock()
 def accumulate(width, height, players, population, scores, ngames):
@@ -94,21 +109,16 @@ def accumulate(width, height, players, population, scores, ngames):
             scores[i] += results[e]
         for p in players:
             ngames[p] += 1
-        print(np.asarray(scores) / np.asarray(ngames))
+        print(min(ngames), np.asarray(scores) / np.asarray(ngames))
 
-def simulate(population, pool=None):
+def simulate(population, queue=None):
     print("Iteration...")
     i = 0
     scores = [0 for i in range(len(population))]
     ngames = [0 for i in range(len(population))]
     while True:
-        if i > 40:
-            if pool != None:
-                pool.close()
-                pool.join()
-                pool = None
-            if min(ngames) > 2:
-                break
+        if min(ngames) > 2:
+            break
         i += 1
         nplayers = random.randint(2, 6)
         width = random.randint(20, 50)
@@ -116,11 +126,14 @@ def simulate(population, pool=None):
 
         players = np.random.choice(range(len(population)), size=nplayers, replace=False)
 
-        if pool:
-            pool.apply_async(accumulate, args=(width, height, players, population, scores, ngames))
+        if queue is not None:
+            queue.put((width, height, players, population, scores, ngames))
         else:
             accumulate(width, height, players, population, scores, ngames)
 
+    print("Wating for queue of size {} to finish..".format(queue.qsize()))
+    if queue is not None:
+        queue.join()
     return np.asarray(scores) / np.asarray(ngames)
 
 if __name__ == "__main__":
@@ -145,14 +158,21 @@ if __name__ == "__main__":
         population = [starting_params] + \
                 [mutate(deepcopy(starting_params), 0.2) for i in range(19)]
         print("Starting from scratch!")
+
+    # The queue can hold 3 additional objects
+    queue = multiprocessing.JoinableQueue(3)
+    for i in range(min(cpu_count(), min(cpu_count(), 20))):
+        multiprocessing.Process(target=worker, args=(queue,)).start()
     while True:
-        pool = multiprocessing.Pool()
-        scores = simulate(population, pool)
-        scores = (scores > scores.max() * 0.75) * scores
+        scores = simulate(population, queue)
+        bad = np.argpartition(scores, -5)[:-5]
+        scores[bad] = 0
+        print(scores)
         children = []
         for i in range(15):
             p1, p2 = np.random.choice(population, p=scores/scores.sum(), replace=False, size=2)
             children.append(mutate(cross(p1, p2)))
+        print([y for (y, x) in sorted(zip(scores, population), key=lambda x: x[0], reverse=True)][:5])
         population = [x for (y, x) in sorted(zip(scores, population), key=lambda x: x[0], reverse=True)][:5] + children
         with open("../sweep.out", 'a') as f:
             f.write("== ITERATION ==\n")
